@@ -1,0 +1,47 @@
+# Build folders
+build/
+*/build/
+cmake-build-*/
+*_artefacts/
+
+# IDE/Editor files
+.vscode/
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*~
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# JUCE - Don't commit the entire JUCE framework (it's huge and can be downloaded)
+# If you want to include JUCE, uncomment the next line and comment out JUCE/
+# But typically it's better to have users download JUCE separately
+JUCE/
+
+# However, DO commit your plugin source code
+!simple_gain_plugin/
+!simple_gain_plugin/Source/
+!simple_gain_plugin/CMakeLists.txt
+
+# Documentation - we want these!
+!*.md
+!CLAUDE.md
+!JOURNAL.md
+!NOISE_GATE_PLAN.md
