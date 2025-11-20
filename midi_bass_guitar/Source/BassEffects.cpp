@@ -185,7 +185,8 @@ float BassEffects::applyCompression(float input)
     {
         float excess = envelope - threshold;
         float reduction = excess * (1.0f - 1.0f / ratio);
-        float targetGain = (threshold + (excess - reduction)) / envelope;
+        float minEnvelope = 0.001f;
+        float targetGain = (threshold + (excess - reduction)) / juce::jmax(envelope, minEnvelope);
 
         return input * targetGain;
     }
