@@ -74,6 +74,5 @@ private:
     // Helper functions
     void updateFilters();
     void updateTonePreset();
-    float applyCompression(float input);
     float applyAmpSaturation(float input);
 };

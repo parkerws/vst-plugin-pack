@@ -66,12 +66,43 @@ void BassEffects::processBlock(juce::AudioBuffer<float>& buffer)
         if (currentTone == BassTone::Compressed)
             effectiveCompression = juce::jmax(effectiveCompression, 0.7f);
 
-        for (int channel = 0; channel < numChannels; ++channel)
+        // Process sample by sample to calculate envelope from average of all channels
+        for (int sample = 0; sample < numSamples; ++sample)
         {
-            float* channelData = buffer.getWritePointer(channel);
-            for (int sample = 0; sample < numSamples; ++sample)
+            // Calculate average amplitude across all channels for envelope detection
+            float sampleAverage = 0.0f;
+            for (int channel = 0; channel < numChannels; ++channel)
             {
-                channelData[sample] = applyCompression(channelData[sample]);
+                sampleAverage += std::abs(buffer.getSample(channel, sample));
+            }
+            sampleAverage /= static_cast<float>(numChannels);
+
+            // Update envelope based on the average
+            const float attack = 0.01f;
+            const float release = 0.1f;
+            if (sampleAverage > envelope)
+                envelope = envelope * (1.0f - attack) + sampleAverage * attack;
+            else
+                envelope = envelope * (1.0f - release) + sampleAverage * release;
+
+            // Calculate gain reduction based on envelope
+            float gainReduction = 1.0f;
+            float threshold = 0.3f;
+            float ratio = 1.0f + (effectiveCompression * 4.0f); // 1:1 to 5:1 ratio
+
+            if (envelope > threshold)
+            {
+                float excess = envelope - threshold;
+                float reduction = excess * (1.0f - 1.0f / ratio);
+                float minEnvelope = 0.001f;
+                gainReduction = (threshold + (excess - reduction)) / juce::jmax(envelope, minEnvelope);
+            }
+
+            // Apply the same gain reduction to all channels
+            for (int channel = 0; channel < numChannels; ++channel)
+            {
+                float* channelData = buffer.getWritePointer(channel);
+                channelData[sample] *= gainReduction;
             }
         }
     }
@@ -162,36 +193,6 @@ void BassEffects::updateTonePreset()
     }
 
     updateFilters();
-}
-
-float BassEffects::applyCompression(float input)
-{
-    // Simple envelope follower compression
-    const float attack = 0.01f;
-    const float release = 0.1f;
-
-    // Track envelope
-    float inputAbs = std::abs(input);
-    if (inputAbs > envelope)
-        envelope = envelope * (1.0f - attack) + inputAbs * attack;
-    else
-        envelope = envelope * (1.0f - release) + inputAbs * release;
-
-    // Calculate gain reduction
-    float threshold = 0.3f;
-    float ratio = 1.0f + (compressionAmount * 4.0f); // 1:1 to 5:1 ratio
-
-    if (envelope > threshold)
-    {
-        float excess = envelope - threshold;
-        float reduction = excess * (1.0f - 1.0f / ratio);
-        float minEnvelope = 0.001f;
-        float targetGain = (threshold + (excess - reduction)) / juce::jmax(envelope, minEnvelope);
-
-        return input * targetGain;
-    }
-
-    return input;
 }
 
 float BassEffects::applyAmpSaturation(float input)
