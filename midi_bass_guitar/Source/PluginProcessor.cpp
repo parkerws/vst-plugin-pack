@@ -189,8 +189,8 @@ void MIDIBassGuitarAudioProcessor::setStateInformation(const void* data, int siz
     // Restore parameter states
     juce::MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
 
-    articulationParam->setValueNotifyingHost(stream.readInt() / 3.0f); // Normalize to 0-1
-    toneParam->setValueNotifyingHost(stream.readInt() / 4.0f); // Normalize to 0-1
+    articulationParam->setValueNotifyingHost(articulationParam->convertTo0to1(stream.readInt()));
+    toneParam->setValueNotifyingHost(toneParam->convertTo0to1(stream.readInt()));
     bassParam->setValueNotifyingHost(stream.readFloat());
     midParam->setValueNotifyingHost(stream.readFloat());
     trebleParam->setValueNotifyingHost(stream.readFloat());
