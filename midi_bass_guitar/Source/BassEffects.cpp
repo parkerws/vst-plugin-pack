@@ -94,6 +94,9 @@ void BassEffects::processBlock(juce::AudioBuffer<float>& buffer)
 
 void BassEffects::updateFilters()
 {
+    if (currentSampleRate <= 0.0)
+        return;
+    
     const double sampleRate = currentSampleRate;
 
     // Bass - Low shelf at 80Hz (fundamental bass frequencies)
