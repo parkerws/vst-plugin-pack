@@ -213,7 +213,7 @@ float BassEffects::applyAmpSaturation(float input)
 void BassEffects::setTone(BassTone tone)
 {
     currentTone = tone;
-    updateTonePreset();
+    // updateTonePreset(); // Do not reset EQ/compression on tone change
 }
 
 void BassEffects::setBass(float bass)
