@@ -89,10 +89,9 @@ void BassVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int star
             outputBuffer.addSample(channel, startSample, currentSample);
         }
 
-        // Advance phase
+        // Advance phase with smooth wrapping to avoid discontinuities
         currentAngle += angleDelta;
-        if (currentAngle > 2.0 * juce::MathConstants<double>::pi)
-            currentAngle -= 2.0 * juce::MathConstants<double>::pi;
+        currentAngle = std::fmod(currentAngle, 2.0 * juce::MathConstants<double>::pi);
 
         ++startSample;
 
