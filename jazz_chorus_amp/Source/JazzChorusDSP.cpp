@@ -26,6 +26,10 @@ void JazzChorusDSP::prepare(double sampleRate, int samplesPerBlock, int numChann
     // Prepare chorus effect
     chorus.prepare(sampleRate, samplesPerBlock, numChannels);
 
+    // Prepare cabinet convolution
+    cabinetConvolution.prepare(spec);
+    loadCabinetIR();
+
     // Initialize filters with current parameter values
     updateFilters();
 
@@ -39,6 +43,7 @@ void JazzChorusDSP::reset()
     trebleFilter.reset();
     brightFilter.reset();
     chorus.reset();
+    cabinetConvolution.reset();
 }
 
 void JazzChorusDSP::processBlock(juce::AudioBuffer<float>& buffer)
@@ -78,7 +83,13 @@ void JazzChorusDSP::processBlock(juce::AudioBuffer<float>& buffer)
     // Stage 3: Chorus effect (the star of the show!)
     chorus.processBlock(buffer);
 
-    // Stage 4: Output volume
+    // Stage 4: CABINET SIMULATION - Makes it a real amp instead of just a pedal!
+    if (cabinetLoaded)
+    {
+        cabinetConvolution.process(context);
+    }
+
+    // Stage 5: Output volume
     for (int channel = 0; channel < numChannels; ++channel)
     {
         float* channelData = buffer.getWritePointer(channel);
@@ -134,6 +145,63 @@ float JazzChorusDSP::applyCleanSaturation(float input)
         return -0.8f + (input + 0.8f) * 0.5f;
 
     return input;
+}
+
+void JazzChorusDSP::loadCabinetIR()
+{
+    // Load a simulated 2x12 Jazz Chorus cabinet impulse response
+    // Jazz Chorus uses open-back cabinets which have a different character
+    // than closed-back Orange cabinets - more airy and spacious
+
+    const int irLength = 2048; // Typical IR length (about 46ms at 44.1kHz)
+    juce::AudioBuffer<float> ir(2, irLength); // Stereo IR
+    ir.clear();
+
+    // Create a simulated open-back cabinet response
+    // Open-back cabinets have:
+    // - Less bass response (sound escapes from back)
+    // - More natural, airy character
+    // - Wider stereo image
+    // - Less boxy coloration
+
+    for (int channel = 0; channel < 2; ++channel)
+    {
+        float* irData = ir.getWritePointer(channel);
+
+        // Slight stereo offset for width
+        float stereoOffset = (channel == 0) ? 0.0f : 0.05f;
+
+        for (int i = 0; i < irLength; ++i)
+        {
+            float t = static_cast<float>(i) / static_cast<float>(irLength);
+            float tOffset = t + stereoOffset;
+
+            // Initial transient (more defined than closed-back)
+            float impulse = (i < 8) ? (1.0f - t * 12.5f) : 0.0f;
+
+            // Open-back resonances (less pronounced)
+            float resonance = std::sin(tOffset * 80.0f * juce::MathConstants<float>::twoPi) * 0.2f;
+
+            // Faster decay (less energy trapped in cabinet)
+            float decay = std::exp(-tOffset * 10.0f);
+
+            // Airy reflections (more high-frequency content)
+            float reflection = (std::sin(tOffset * 700.0f) + std::sin(tOffset * 1500.0f)) * 0.15f;
+
+            // Less bass content than closed-back
+            float bassRolloff = 1.0f - (1.0f / (1.0f + t * 2.0f));
+
+            irData[i] = (impulse + resonance + reflection) * decay * bassRolloff * 0.6f;
+        }
+    }
+
+    // Load the IR into the convolution engine
+    cabinetConvolution.loadImpulseResponse(std::move(ir),
+                                           currentSampleRate,
+                                           juce::dsp::Convolution::Stereo::yes,
+                                           juce::dsp::Convolution::Trim::no,
+                                           juce::dsp::Convolution::Normalise::yes);
+    cabinetLoaded = true;
 }
 
 // Parameter setters

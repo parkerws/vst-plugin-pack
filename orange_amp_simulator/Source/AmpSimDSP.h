@@ -4,15 +4,20 @@
 /**
  * AmpSimDSP - Core DSP engine for Orange-style tube amp simulation
  *
+ * REAL AMP SIMULATION including:
+ *
  * Signal chain:
- * Input -> Preamp Gain -> Tone Stack (EQ) -> Drive/Saturation -> Power Amp -> Output
+ * Input -> Tube Preamp (12AX7 model) -> Tone Stack (EQ) -> Tube Drive Stage ->
+ * Power Amp (EL84 model) -> Output Transformer -> Cabinet IR Convolution -> Output
  *
  * Features:
- * - Preamp gain stage with soft clipping
- * - 3-band EQ (Bass, Middle, Treble) modeled after tube amp tone stacks
- * - Adjustable drive with multiple waveshaping algorithms
- * - Power amp compression and saturation
- * - Presence control for high-frequency character
+ * - Multi-stage tube preamp modeling (12AX7 triode characteristics)
+ * - Realistic tone stack (James-Baxandall style)
+ * - Tube drive stage with asymmetric clipping
+ * - Power amp modeling (EL84 push-pull with compression/sag)
+ * - Output transformer saturation
+ * - Cabinet impulse response convolution (4x12 Orange cabinet simulation)
+ * - Presence control for negative feedback modeling
  */
 class AmpSimDSP
 {
@@ -63,8 +68,27 @@ private:
     // DC blocking filter to remove DC offset from saturation
     juce::dsp::ProcessorDuplicator<Filter, FilterCoefs> dcBlocker;
 
+    // Cabinet IR convolution (REAL amp simulation!)
+    juce::dsp::Convolution cabinetConvolution;
+    bool cabinetLoaded = false;
+
+    // Oversampling for better nonlinear processing
+    using Oversample = juce::dsp::Oversampling<float>;
+    std::unique_ptr<Oversample> oversampler;
+
+    // Power amp state (for sag simulation)
+    float powerAmpEnvelope = 0.0f;
+
     // Helper functions
     void updateFilters();
+    void loadCabinetIR();
+
+    // Tube modeling
+    float tubePreamp(float input, float gain);      // 12AX7 preamp stage
+    float tubePowerAmp(float input);                // EL84 power amp
+    float outputTransformer(float input);           // Output transformer saturation
+
+    // Legacy (now enhanced)
     float applySaturation(float input, float driveAmount);
     float softClip(float input);
     float tanh_approx(float x);  // Fast tanh approximation

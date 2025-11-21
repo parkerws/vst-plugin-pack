@@ -5,19 +5,23 @@
 /**
  * JazzChorusDSP - Core DSP engine for Jazz Chorus amp simulation
  *
+ * REAL SOLID-STATE AMP SIMULATION including:
+ *
+ * Signal chain:
+ * Input -> Clean Solid-State Preamp -> EQ (Bright voicing) ->
+ * Stereo Chorus -> Cabinet IR Convolution -> Output
+ *
  * The Jazz Chorus is famous for:
  * - Ultra-clean solid-state preamp with high headroom
  * - Bright, sparkly tone character
  * - Iconic stereo chorus effect
  * - Minimal distortion (designed to stay clean at high volumes)
  *
- * Signal chain:
- * Input -> Clean Preamp -> EQ (Bright/Clean character) -> Stereo Chorus -> Output
- *
  * Features:
- * - Clean preamp with subtle solid-state warmth
+ * - Solid-state preamp modeling (clean with subtle transistor character)
  * - Bright EQ voicing (treble, middle, bass)
  * - Stereo chorus effect (rate, depth, mix)
+ * - Cabinet impulse response convolution (2x12 open-back simulation)
  * - Volume control
  * - Chorus on/off switch
  */
@@ -70,7 +74,12 @@ private:
     // Chorus effect
     ChorusEffect chorus;
 
+    // Cabinet IR convolution (REAL amp simulation!)
+    juce::dsp::Convolution cabinetConvolution;
+    bool cabinetLoaded = false;
+
     // Helper functions
     void updateFilters();
+    void loadCabinetIR();
     float applyCleanSaturation(float input); // Subtle solid-state character
 };
