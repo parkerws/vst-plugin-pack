@@ -71,7 +71,7 @@ void BassEffects::processBlock(juce::AudioBuffer<float>& buffer)
             float* channelData = buffer.getWritePointer(channel);
             for (int sample = 0; sample < numSamples; ++sample)
             {
-                channelData[sample] = applyCompression(channelData[sample]);
+                channelData[sample] = applyCompression(channelData[sample], effectiveCompression);
             }
         }
     }
@@ -164,7 +164,7 @@ void BassEffects::updateTonePreset()
     updateFilters();
 }
 
-float BassEffects::applyCompression(float input)
+float BassEffects::applyCompression(float input, float compressionLevel)
 {
     // Simple envelope follower compression
     const float attack = 0.01f;
@@ -179,7 +179,7 @@ float BassEffects::applyCompression(float input)
 
     // Calculate gain reduction
     float threshold = 0.3f;
-    float ratio = 1.0f + (compressionAmount * 4.0f); // 1:1 to 5:1 ratio
+    float ratio = 1.0f + (compressionLevel * 4.0f); // 1:1 to 5:1 ratio
 
     if (envelope > threshold)
     {
